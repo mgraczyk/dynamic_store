@@ -36,7 +36,7 @@ def _build_tree(f, t):
         else:
             # Split on the nearest transition to find the partition index
             # TODO: Midpoint computation must change with nonuniform cdf
-            mid = (right - left)/2
+            mid = (right + left)/2
             ri = minsearch(t, mid, lo, hi)
 
             if ri == lo:
@@ -54,7 +54,7 @@ def _build_tree(f, t):
                     pi = ri
           
             # TODO: Also fix directions with cdf
-            direction = Direction.Right if t[pi] >= mid else Direction.Left
+            direction = Direction.Left if t[pi] >= mid else Direction.Right
             newLeft = None if pi+1 == hi else t[pi+1]
 
             instack.append((lo, pi, left, t[pi]))

@@ -38,7 +38,7 @@ def test_decision_tree(f, tree):
     print()
 
 def brancher_test(N):
-    sample = Samples.gen_rand_sparse(N, 0.02, 0.2, 0)
+    sample = Samples.gen_rand_sparse(N, 0.05, 0.1, 0)
     tree = brancher.make_decision_tree(sample)
 
     test_decision_tree(sample, tree)
