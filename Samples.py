@@ -5,36 +5,6 @@ import random
 
 import operator
 
-def gen_rand_sticky(N, swp, f0=None, seed=None):
-    """ Generates a map f(n) from the first N integers to {0,1}
-
-        If f0 is not given or is none, then f0 will be selected uniformly from {0,1}
-        For 0 < n < N, P(f(n) == f(n-1)) == swp
-    """
-
-    assert(0 <= swp <= 1)
-
-    if seed is not None:
-        random.seed(seed)
-    
-    if f0 is None:
-        f0 = random.choice((0,1))
-
-    f0 = int(f0)
-    if swp == 0:
-        f = [f0]*N
-    elif swp == 1:
-        f1 = not f0
-        f = [f0, f0]*(N/2) + ([f0] if N % 2 != 0 else [])
-    else:
-        f = [0]*N
-        f[0] = f0
-
-        for i in range(1, N):
-            f[i] = f[i-1] ^ (random.random() < swp)
-   
-    return f
-
 def gen_rand_sparse(N, Pon, Poff, f0=None, seed=None):
     """ Generates a map f(n) from the first N integers to {0,1}
         The map is consists of mostly f0 in {0,1} with some "islands" of ~f0.
@@ -60,15 +30,21 @@ def gen_rand_sparse(N, Pon, Poff, f0=None, seed=None):
 
     f = [0]*N
     f[0] = int(f0)
-    for i in range(1, N):
-        r = random.random()
-        if f[i-1] == 0:
-            fi = f[i-1] ^ (r < Pon)
-        else:
-            fi = f[i-1] ^ (r < Poff)
+    if (f0 and Poff == 0) or (not f0 and Pon == 0):
+        f = [f0]*N
+    elif Pon == Poff == 1:
+        f1 = not f0
+        f = [f0, f1]*(N//2) + ([f0] if N % 2 != 0 else [])
+    else:
+        for i in range(1, N):
+            r = random.random()
+            if f[i-1] == 0:
+                fi = f[i-1] ^ (r < Pon)
+            else:
+                fi = f[i-1] ^ (r < Poff)
 
-        f[i] = fi
-        last = fi
+            f[i] = fi
+            last = fi
 
     return f
 

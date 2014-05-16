@@ -20,14 +20,12 @@ def get_transitions(f):
 def _build_tree(t, lo, hi, left, right):
     instack = [(lo, hi, left, right)]
     nodes = []
-    tracker = []
 
     while instack:
         lo, hi, left, right = instack.pop()
 
         if lo >= hi:
-            nodes.append(None)
-            tracker.append(0)
+            nodes.append((True, None))
         else:
             # Split on the nearest transition to find the partition index
             # TODO: Midpoint computation must change with nonuniform cdf
@@ -54,23 +52,15 @@ def _build_tree(t, lo, hi, left, right):
 
             instack.append((pi+1, hi, newLeft, right))
             instack.append((lo, pi, left, t[pi]))
-            nodes.append((pi, t[pi], direction))
-            tracker.append(1)
+            nodes.append((False, (pi, t[pi], direction)))
 
-        while len(tracker) > 2 and \
-           (tracker[-1] == 0 or tracker[-1] == 2) and \
-           (tracker[-2] == 0 or tracker[-2] == 2):
-            tracker.pop()
-            tracker.pop()
-            tracker.pop()
-            tracker.append(2)
+        while len(nodes) > 2 and nodes[-1][0] and nodes[-2][0]:
+            _, lchild = nodes.pop()
+            _, rchild = nodes.pop()
+            _, parent = nodes.pop()
+            nodes.append((True, (parent, (lchild, rchild))))
 
-            lchild = nodes.pop()
-            rchild = nodes.pop()
-            parent = nodes.pop()
-            nodes.append((parent, (lchild, rchild)))
-
-    return nodes[0]
+    return nodes[0][1]
 
 def make_decision_tree(f, cdf=None):
     """ f is the function to be encoded.
@@ -93,34 +83,43 @@ def tree_to_branches(tree, indent = 0):
     pass
 
 def tree_depth(tree):
-    if tree:
-        ld = tree_depth(tree[1][0])
-        rd = tree_depth(tree[1][1])
-        return 1 + max(ld, rd)
-    else:
-        return 0
+    maxdepth = 0
+    nodes = [(tree, 1)]
 
-def print_tree(tree, indent=0):
+    while nodes:
+        node, depth = nodes.pop()
+        maxdepth = max(maxdepth, depth)
+        if not node:
+            continue
+
+        nodes.append((node[1][0], 1 + depth))
+        nodes.append((node[1][1], 1 + depth))
+
+    return maxdepth
+
+def print_tree(tree, startindent=0):
+    nodes = [(tree, startindent)]
     prestr = "|   "
-    if tree:
-        print(prestr*indent + "|--" + str(tree[0]))
-        print_tree(tree[1][0], indent+1)
-        print_tree(tree[1][1], indent+1)
-    else:
-        print(prestr*indent + "|--NULL")
+    while nodes:
+        node, indent = nodes.pop()
+        if node:
+            print(prestr*indent + "|--" + str(node[0]))
+            nodes.append((node[1][0], indent+1))
+            nodes.append((node[1][1], indent+1))
+        else:
+            print(prestr*indent + "|--NULL")
 
 def main():
     if len(sys.argv) < 2:
         print("USAGE: {} N".format(sys.argv[0]))
     else:
         N = int(sys.argv[1])
-        sample = Samples.gen_rand_sparse(N, 0.02, 0.2, 0)
+        sample = Samples.gen_rand_sparse(N, 1, 1, 0)
 
         print("Samples:")
         print(Samples.terminal_plot(sample))
 
         tree = make_decision_tree(sample)
-        depth = tree_depth(tree)
         
         print("Tree:")
         print_tree(tree)
@@ -130,7 +129,7 @@ def main():
         print()
 
         print("Depth:")
-        print(depth)
+        print(tree_depth(tree))
 
 
 if __name__ == "__main__":
