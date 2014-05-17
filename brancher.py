@@ -86,8 +86,23 @@ def make_decision_tree(f, cdf=None):
 
     return tree
 
-def tree_to_branches(tree, indent = 0):
-    pass
+def tree_to_branches(tree, indent=0):
+    assert(tree)
+
+    indentStr = "  "*indent
+    leftHint = "LIKELY"
+    rightHint = "UNLIKELY"
+    retfmt = indentStr + "  return {};\n"
+
+    data = tree.data
+
+    hint = leftHint if data.dr == Direction.Left else rightHint
+    leftBr = tree_to_branches(tree.lch, indent+1) if tree.lch else retfmt.format(data.val ^ 1)
+    rightBr = tree_to_branches(tree.rch, indent+1) if tree.rch else retfmt.format(data.val)
+
+    return "{}if ({}(key < {})) {{\n{}{}}} else {{\n{}{}}}\n".format(
+            indentStr, hint, data.key, leftBr, indentStr, rightBr, indentStr)
+
 
 def get_value_from_tree(tree, key):
     """ Walks the decision tree.
@@ -148,7 +163,7 @@ def main():
         print("USAGE: {} N".format(sys.argv[0]))
     else:
         N = int(sys.argv[1])
-        sample = Samples.gen_rand_sparse(N, 0.02, 0.2, 0)
+        sample = Samples.gen_rand_sparse(N, 0.02, .15, 0)
 
         print("Samples:")
         print(Samples.terminal_plot(sample))
@@ -157,6 +172,11 @@ def main():
         
         print("Tree:")
         print_tree(tree)
+        print()
+
+        print("Code:")
+        print(tree_to_branches(tree))
+        print()
         
         print("Num Transitions:")
         print(Samples.count_transitions(sample))

@@ -36,7 +36,7 @@ def test_decision_tree(f, tree):
 def brancher_test(length, count):
     trans, depths, comps, totmisses = 0,0,0,0
     for i in range(count):
-        sample = Samples.gen_rand_sparse(length, 0.05, 0.1, 0)
+        sample = Samples.gen_rand_sparse(length, 0.005, 0.1, 0)
         tree = brancher.make_decision_tree(sample)
 
         comparisons, misses = test_decision_tree(sample, tree)
