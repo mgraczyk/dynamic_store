@@ -31,24 +31,34 @@ def test_decision_tree(f, tree):
         comparisons += comp
         misses += miss
 
-    print("Num Transitions = {}".format(Samples.count_transitions(f)))
-    print("Depth = {}".format(brancher.tree_depth(tree)))
-    print("Avg Comparisons = {}".format(comparisons/len(f)))
-    print("Avg Misses = {}".format(misses/len(f)))
+    return comparisons, misses
+
+def brancher_test(length, count):
+    trans, depths, comps, totmisses = 0,0,0,0
+    for i in range(count):
+        sample = Samples.gen_rand_sparse(length, 0.05, 0.1, 0)
+        tree = brancher.make_decision_tree(sample)
+
+        comparisons, misses = test_decision_tree(sample, tree)
+
+        trans += Samples.count_transitions(sample)
+        depths += brancher.tree_depth(tree)
+        comps += comparisons/length
+        totmisses += misses/length
+
+    print("Avg Transitions = {}".format(trans/count))
+    print("Avg Depth = {}".format(depths/count))
+    print("Avg Comparisons = {}".format(comps/count))
+    print("Avg Misses = {}".format(totmisses/count))
     print()
-
-def brancher_test(N):
-    sample = Samples.gen_rand_sparse(N, 0.05, 0.1, 0)
-    tree = brancher.make_decision_tree(sample)
-
-    test_decision_tree(sample, tree)
     
-def main(N):
-    brancher_test(N)
+def main(length, count):
+    brancher_test(length, count)
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("USAGE: {} N".format(sys.argv[0]))
+        print("USAGE: {} length [count]".format(sys.argv[0]))
     else:
-        N = int(sys.argv[1])
-        main(N)
+        length = int(sys.argv[1])
+        count =  int(sys.argv[2]) if len(sys.argv) > 2 else 1
+        main(length, count)
