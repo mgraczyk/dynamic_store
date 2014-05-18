@@ -4,6 +4,7 @@ import sys
 import random
 
 import operator
+from itertools import accumulate
 
 def gen_rand_sparse(N, Pon, Poff, f0=None, seed=None):
     """ Generates a map f(n) from the first N integers to {0,1}
@@ -47,6 +48,18 @@ def gen_rand_sparse(N, Pon, Poff, f0=None, seed=None):
             last = fi
 
     return f
+
+def hist_to_cdf(samples):
+    """ Convert a sample histogram to a CDF
+    """
+
+    cumsum = list(accumulate(samples))
+    norm = cumsum[-1]
+
+    if norm == 0:
+        return [1]*len(samples)
+    else:
+        return [c/norm for c in cumsum]
 
 def count_transitions(f):
     trans = 0

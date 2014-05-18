@@ -24,7 +24,7 @@ def get_transitions(f):
 
     return t
 
-def _build_tree(f, t):
+def _build_tree(f, t, cdf = None):
     instack = [(0, len(t), 0, len(f))]
     nodes = []
 
@@ -36,7 +36,14 @@ def _build_tree(f, t):
         else:
             # Split on the nearest transition to find the partition index
             # TODO: Midpoint computation must change with nonuniform cdf
-            mid = (right + left)/2
+            if cdf == None:
+                mid = (right + left)/2
+            else:
+                lprob = cdf[left-1] if left else 0.0
+                rprob = cdf[right] if right < len(cdf) else 1.0
+                mid_p = (lprob + rprob)/2
+                mid = minsearch(cdf, mid_p, left, right)
+
             ri = minsearch(t, mid, lo, hi)
 
             if ri == lo:
@@ -52,9 +59,12 @@ def _build_tree(f, t):
                     pi = li
                 else:
                     pi = ri
-          
-            # TODO: Also fix directions with cdf
-            direction = Direction.Left if t[pi] >= mid else Direction.Right
+        
+            if cdf == None:
+                direction = Direction.Left if t[pi] > mid else Direction.Right
+            else:
+                direction = Direction.Right if cdf[t[pi]] <= mid_p else Direction.Left
+
             newLeft = None if pi+1 == hi else t[pi+1]
 
             instack.append((lo, pi, left, t[pi]))
@@ -75,14 +85,11 @@ def make_decision_tree(f, cdf=None):
             or None to indicate a uniform input space.
     """
 
-    if cdf is not None:
-        raise NotImplementedError("nonunifom input cdfs are unimplemented.")
-
     trans = get_transitions(f)
     if len(trans) == 0:
         return BranchNode(BranchData(0, 0, Direction.Right, f[0]), LeafNode, LeafNode)
 
-    tree = _build_tree(f, trans)
+    tree = _build_tree(f, trans, cdf)
 
     return tree
 
@@ -163,16 +170,20 @@ def main():
         print("USAGE: {} N".format(sys.argv[0]))
     else:
         N = int(sys.argv[1])
-        sample = Samples.gen_rand_sparse(N, 0.02, .15, 0)
+        #sample = Samples.gen_rand_sparse(N, 0.02, .15, 0)
+        sample = [0]*10 + [0]*80 + [1, 0, 1]
 
         print("Samples:")
         print(Samples.terminal_plot(sample))
-
-        tree = make_decision_tree(sample)
-        
-        print("Tree:")
-        print_tree(tree)
         print()
+
+        cdf = Samples.hist_to_cdf(sample)
+
+        print("CDF:")
+        print(cdf)
+        print()
+
+        tree = make_decision_tree(sample, cdf)
 
         print("Code:")
         print(tree_to_branches(tree))

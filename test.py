@@ -2,6 +2,11 @@
 
 import sys
 
+import difflib
+import itertools
+from itertools import repeat
+from pprint import pprint
+
 import brancher
 import Samples
 
@@ -46,11 +51,20 @@ def brancher_test(length, count):
         comps += comparisons/length
         totmisses += misses/length
 
+        flatcdf = Samples.hist_to_cdf(repeat(1, length))
+        nocdf = brancher.tree_to_branches(tree)
+        cdf = brancher.tree_to_branches(brancher.make_decision_tree(sample, flatcdf))
+        if nocdf != cdf:
+            print("Use of CDF changed output!")
+            diff = list(difflib.Differ().compare(cdf, nocdf))
+            pprint(diff)
+
     print("Avg Transitions = {}".format(trans/count))
     print("Avg Depth = {}".format(depths/count))
     print("Avg Comparisons = {}".format(comps/count))
     print("Avg Misses = {}".format(totmisses/count))
     print()
+
     
 def main(length, count):
     brancher_test(length, count)
