@@ -2,8 +2,11 @@
 
 import sys
 from bisect import bisect_left as minsearch
+from bisect import bisect_right as maxsearch
 
 from collections import namedtuple
+from itertools import chain
+from itertools import repeat
 
 import Samples
 
@@ -28,6 +31,11 @@ def _build_tree(f, t, cdf = None):
     instack = [(0, len(t), 0, len(f))]
     nodes = []
 
+    if cdf == None:
+        cdf = Samples.hist_to_cdf(repeat(1, len(f)))
+
+    cdf = list(chain((0,), cdf))
+
     while instack:
         lo, hi, left, right = instack.pop()
 
@@ -35,14 +43,10 @@ def _build_tree(f, t, cdf = None):
             nodes.append((True, LeafNode))
         else:
             # Split on the nearest transition to find the partition index
-            # TODO: Midpoint computation must change with nonuniform cdf
-            if cdf == None:
-                mid = (right + left)/2
-            else:
-                lprob = cdf[left-1] if left else 0.0
-                rprob = cdf[right] if right < len(cdf) else 1.0
-                mid_p = (lprob + rprob)/2
-                mid = minsearch(cdf, mid_p, left, right)
+            lprob = cdf[left]
+            rprob = cdf[right]
+            mid_p = (lprob + rprob)/2
+            mid = minsearch(cdf, mid_p, left, right)
 
             ri = minsearch(t, mid, lo, hi)
 
@@ -60,10 +64,7 @@ def _build_tree(f, t, cdf = None):
                 else:
                     pi = ri
         
-            if cdf == None:
-                direction = Direction.Left if t[pi] > mid else Direction.Right
-            else:
-                direction = Direction.Right if cdf[t[pi]] <= mid_p else Direction.Left
+            direction = Direction.Right if cdf[t[pi]] < mid_p else Direction.Left
 
             newLeft = None if pi+1 == hi else t[pi+1]
 
@@ -88,6 +89,8 @@ def make_decision_tree(f, cdf=None):
     trans = get_transitions(f)
     if len(trans) == 0:
         return BranchNode(BranchData(0, 0, Direction.Right, f[0]), LeafNode, LeafNode)
+
+    assert(not cdf or len(cdf) == len(f))
 
     tree = _build_tree(f, trans, cdf)
 
@@ -170,11 +173,14 @@ def main():
         print("USAGE: {} N".format(sys.argv[0]))
     else:
         N = int(sys.argv[1])
-        #sample = Samples.gen_rand_sparse(N, 0.02, .15, 0)
-        sample = [0]*10 + [0]*80 + [1, 0, 1]
+        sample = Samples.gen_rand_sparse(N, 0.02, .15, 0)
 
         print("Samples:")
         print(Samples.terminal_plot(sample))
+        print()
+
+        print("Transitions:")
+        print(get_transitions(sample))
         print()
 
         cdf = Samples.hist_to_cdf(sample)
