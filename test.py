@@ -2,6 +2,7 @@
 
 import sys
 
+import math
 import difflib
 import itertools
 from itertools import repeat
@@ -60,11 +61,15 @@ def rand_brancher_test(length, count):
         comps += comparisons/length
         totmisses += misses/length
 
+    avgComps = comps/count
+
     print("Avg Transitions = {}".format(trans/count))
     print("Avg Depth = {}".format(depths/count))
-    print("Avg Comparisons = {}".format(comps/count))
+    print("Avg Comparisons = {}".format(avgComps))
     print("Avg Miss Rate = {}".format(totmisses/comps))
     print()
+
+    return not avgComps <= math.ceil(math.log(length, 2))
 
 def brancher_test():
     tests = [
@@ -88,6 +93,7 @@ def brancher_test():
             )
         ]
 
+    fail = False
     for i, test in enumerate(tests):
         actual = brancher.make_decision_tree(test[0][0], test[0][1])
         test_decision_tree(test[0][0], actual)
@@ -101,20 +107,25 @@ def brancher_test():
             print("Actual")
             print(brancher.tree_to_branches(actual, 1))
             print("*"*80)
+            fail = True
     print()
+    return fail
     
 def main(length, count):
-    brancher_test()
-    rand_brancher_test(length, count)
+    result = brancher_test()
+    result |= rand_brancher_test(length, count)
+    return result
 
 if __name__ == "__main__":
     if "h" in sys.argv:
         print("USAGE: {} length [count] [seed]".format(sys.argv[0]))
+        result = 0
     else:
-        length = int(sys.argv[1]) if len(sys.argv) > 1 else 100
-        count =  int(sys.argv[2]) if len(sys.argv) > 2 else 1
+        length = int(sys.argv[1]) if len(sys.argv) > 1 else 1000
+        count =  int(sys.argv[2]) if len(sys.argv) > 2 else 20
 
         if len(sys.argv) > 3:
             random.seed(sys.argv[3])
 
-        main(length, count)
+        result = main(length, count)
+    exit(result)
